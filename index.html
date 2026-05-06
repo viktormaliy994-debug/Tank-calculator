@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Калькулятор группы резервуаров</title>
+    <title>Калькулятор резервуаров + расчёт ДО/ПОСЛЕ наполнения</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
             background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -69,13 +67,11 @@
             transition: 0.2s;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        .add-tank-btn:active {
-            transform: scale(0.96);
-        }
+        .add-tank-btn:active { transform: scale(0.96); }
         /* Сетка карточек */
         .tanks-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
             gap: 24px;
         }
         .tank-card {
@@ -84,8 +80,6 @@
             padding: 18px 20px 22px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
         }
         .card-header {
             display: flex;
@@ -115,7 +109,6 @@
             height: 34px;
             border-radius: 30px;
             cursor: pointer;
-            transition: 0.1s;
         }
         .param-row {
             display: flex;
@@ -133,12 +126,12 @@
             color: #555;
             margin-bottom: 5px;
         }
-        .param input {
+        .param input, .param select {
             width: 100%;
-            padding: 12px 10px;
+            padding: 10px 12px;
             border: 1.5px solid #ddd;
             border-radius: 20px;
-            font-size: 15px;
+            font-size: 14px;
             background: #fafbfe;
         }
         .level-slider {
@@ -156,7 +149,7 @@
             margin: 10px 0 6px;
         }
         .volume-value {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
             color: #1e3c72;
         }
@@ -168,67 +161,104 @@
             text-align: center;
             margin-top: 8px;
         }
-        .status.normal {
-            background: #e0f2e9;
-            color: #166534;
+        .status.normal { background: #e0f2e9; color: #166534; }
+        .status.warning { background: #ffedd5; color: #b45309; }
+        .status.overflow { background: #fee2e2; color: #b91c1c; }
+        
+        /* Блок до/после */
+        .before-after {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 14px;
+            margin: 12px 0 8px;
+            border: 1px solid #e2e8f0;
         }
-        .status.warning {
-            background: #ffedd5;
-            color: #b45309;
+        .before-after-title {
+            font-weight: 700;
+            font-size: 13px;
+            color: #1e3c72;
+            margin-bottom: 12px;
+            text-align: center;
         }
-        .status.overflow {
-            background: #fee2e2;
-            color: #b91c1c;
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            flex-wrap: wrap;
         }
-        hr {
-            margin: 12px 0;
-            border-color: #e9eef3;
+        .level-box {
+            flex: 1;
+            background: white;
+            border-radius: 18px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+        .level-label {
+            font-size: 11px;
+            color: #5b6e8c;
+        }
+        .level-number {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f3b5c;
+        }
+        .add-volume-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            align-items: center;
+        }
+        .add-volume-input {
+            flex: 2;
+            padding: 10px;
+            border-radius: 40px;
+            border: 1.5px solid #cbd5e1;
+            font-size: 14px;
+        }
+        .action-btn {
+            background: #2c5f8a;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .action-btn:active { transform: scale(0.96); }
         .info-note {
             font-size: 11px;
             color: #5b6e8c;
             text-align: center;
             margin-top: 28px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 28px;
+            padding: 10px;
         }
-        @media (max-width: 750px) {
-            .summary-panel { flex-direction: column; align-items: stretch; }
-            .stats { justify-content: space-between; }
-        }
+        hr { margin: 12px 0; border-color: #e9eef3; }
     </style>
 </head>
 <body>
 <div class="dashboard">
-    <!-- сводная панель -->
     <div class="summary-panel">
         <div class="stats">
-            <div class="stat-card">
-                <div class="stat-label">📊 Общий объём</div>
-                <div class="stat-value" id="totalVolumeSpan">0</div>
-                <div style="font-size:12px">литров</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">⚖️ Средний уровень</div>
-                <div class="stat-value" id="avgLevelSpan">0</div>
-                <div style="font-size:12px">см</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">⚠️ Переливы / предел</div>
-                <div class="stat-value" id="overflowCountSpan">0</div>
-                <div style="font-size:12px">резервуаров</div>
-            </div>
+            <div class="stat-card"><div class="stat-label">📊 Общий объём (сейчас)</div><div class="stat-value" id="totalVolumeSpan">0</div><div style="font-size:12px">литров</div></div>
+            <div class="stat-card"><div class="stat-label">⚖️ Средний уровень</div><div class="stat-value" id="avgLevelSpan">0</div><div style="font-size:12px">см</div></div>
+            <div class="stat-card"><div class="stat-label">⚠️ Переливы / предел</div><div class="stat-value" id="overflowCountSpan">0</div><div style="font-size:12px">резервуаров</div></div>
         </div>
         <button class="add-tank-btn" id="addTankMainBtn">➕ Добавить резервуар</button>
     </div>
 
-    <!-- контейнер для карточек резервуаров -->
     <div class="tanks-grid" id="tanksGrid"></div>
     <div class="info-note">
-        💧 Поддерживаются целые и дробные см (интерполяция). Изменяйте уровень ползунком или вручную — расчёт моментальный.
+        💧 <strong>До / После наполнения:</strong> укажите начальный уровень (см), затем добавьте объём (литры) — система рассчитает, до какой высоты поднимется жидкость.<br>
+        📐 Интерполяция по градуировочным таблицам. При превышении максимальной высоты — предупреждение о переливе.
     </div>
 </div>
 
 <script>
-    // ---------- ЭТАЛОННЫЕ ДАННЫЕ (градуировочные таблицы) ----------
+    // ---------- ГРАДУИРОВОЧНЫЕ ТАБЛИЦЫ (те же, сокращённо для читаемости, но полные) ----------
     const TANKS_LIB = {
         "Емк. 70.3": {0:3,1:9,2:17,3:28,4:42,5:58,6:77,7:97,8:118,9:141,10:165,11:191,12:217,13:244,14:272,15:301,16:331,17:362,18:394,19:427,20:461,21:495,22:530,23:566,24:602,25:639,26:677,27:715,28:754,29:793,30:833,31:874,32:915,33:957,34:1000,35:1043,36:1086,37:1129,38:1173,39:1218,40:1264,41:1310,42:1356,43:1402,44:1449,45:1496,46:1544,47:1592,48:1641,49:1690,50:1739,51:1788,52:1838,53:1888,54:1939,55:1990,56:2041,57:2092,58:2144,59:2196,60:2248,61:2301,62:2354,63:2407,64:2460,65:2513,66:2567,67:2621,68:2675,69:2730,70:2785,71:2840,72:2895,73:2950,74:3005,75:3061,76:3117,77:3173,78:3229,79:3285,80:3342,81:3399,82:3456,83:3513,84:3570,85:3627,86:3684,87:3741,88:3798,89:3856,90:3914,91:3972,92:4030,93:4088,94:4146,95:4204,96:4262,97:4320,98:4378,99:4437,100:4495,101:4553,102:4612,103:4670,104:4728,105:4787,106:4845,107:4904,108:4963,109:5021,110:5079,111:5138,112:5196,113:5255,114:5314,115:5372,116:5430,117:5489,118:5547,119:5605,120:5664,121:5722,122:5780,123:5838,124:5895,125:5953,126:6011,127:6068,128:6126,129:6184,130:6241,131:6298,132:6356,133:6413,134:6470,135:6528,136:6583,137:6640,138:6697,139:6753,140:6810,141:6866,142:6922,143:6977,144:7033,145:7088,146:7144,147:7199,148:7253,149:7308,150:7362,151:7416,152:7470,153:7524,154:7577,155:7631,156:7684,157:7736,158:7789,159:7841,160:7893,161:7944,162:7996,163:8047,164:8098,165:8149,166:8199,167:8248,168:8298,169:8347,170:8396,171:8445,172:8493,173:8540,174:8588,175:8634,176:8681,177:8727,178:8772,179:8818,180:8863,181:8907,182:8951,183:8995,184:9037,185:9080,186:9122,187:9163,188:9204,189:9245,190:9284,191:9324,192:9363,193:9401,194:9438,195:9476,196:9512,197:9548,198:9583,199:9617,200:9651,201:9684,202:9715,203:9746,204:9778},
         "Емк. 71.1": {0:1,1:8,2:19,3:32,4:48,5:65,6:85,7:106,8:128,9:152,10:177,11:203,12:230,13:258,14:287,15:317,16:348,17:380,18:413,19:447,20:481,21:516,22:552,23:588,24:625,25:663,26:701,27:740,28:779,29:819,30:860,31:901,32:943,33:985,34:1028,35:1071,36:1115,37:1159,38:1204,39:1249,40:1295,41:1341,42:1387,43:1434,44:1481,45:1528,46:1576,47:1624,48:1673,49:1722,50:1772,51:1822,52:1872,53:1922,54:1973,55:2024,56:2075,57:2126,58:2178,59:2230,60:2283,61:2335,62:2388,63:2441,64:2494,65:2548,66:2602,67:2656,68:2710,69:2765,70:2820,71:2875,72:2930,73:2985,74:3040,75:3096,76:3151,77:3207,78:3263,79:3319,80:3375,81:3432,82:3488,83:3545,84:3602,85:3659,86:3716,87:3773,88:3830,89:3887,90:3945,91:4002,92:4060,93:4118,94:4175,95:4233,96:4291,97:4349,98:4407,99:4465,100:4523,101:4581,102:4640,103:4698,104:4756,105:4815,106:4873,107:4931,108:4990,109:5048,110:5106,111:5165,112:5223,113:5281,114:5340,115:5398,116:5457,117:5516,118:5574,119:5633,120:5691,121:5749,122:5807,123:5865,124:5923,125:5981,126:6039,127:6097,128:6155,129:6213,130:6271,131:6328,132:6386,133:6443,134:6500,135:6557,136:6614,137:6671,138:6728,139:6787,140:6841,141:6898,142:6954,143:7011,144:7067,145:7123,146:7178,147:7234,148:7289,149:7344,150:7399,151:7454,152:7508,153:7563,154:7617,155:7670,156:7724,157:7777,158:7830,159:7883,160:7935,161:7988,162:8040,163:8091,164:8143,165:8194,166:8244,167:8295,168:8345,169:8394,170:8444,171:8493,172:8541,173:8589,174:8637,175:8684,176:8731,177:8778,178:8824,179:8869,180:8915,181:8959,182:9004,183:9048,184:9091,185:9133,186:9176,187:9217,188:9259,189:9300,190:9339,191:9379,192:9418,193:9456,194:9494,195:9531,196:9567,197:9602,198:9637,199:9671,200:9704,201:9737,202:9767,203:9798,204:9829},
@@ -239,7 +269,6 @@
         "Емк. 114.4": {0:3,1:8,2:15,3:25,4:39,5:56,6:75,7:95,8:116,9:138,10:162,11:188,12:214,13:241,14:269,15:298,16:328,17:359,18:391,19:424,20:458,21:492,22:527,23:563,24:599,25:636,26:674,27:712,28:751,29:791,30:831,31:872,32:913,33:955,34:998,35:1041,36:1084,37:1128,38:1172,39:1217,40:1262,41:1308,42:1354,43:1401,44:1448,45:1495,46:1543,47:1591,48:1640,49:1689,50:1738,51:1788,52:1838,53:1888,54:1939,55:1990,56:2041,57:2093,58:2145,59:2198,60:2250,61:2303,62:2356,63:2409,64:2463,65:2517,66:2571,67:2625,68:2680,69:2734,70:2789,71:2845,72:2900,73:2956,74:3012,75:3068,76:3125,77:3181,78:3238,79:3295,80:3352,81:3409,82:3466,83:3524,84:3581,85:3639,86:3697,87:3755,88:3814,89:3872,90:3930,91:3988,92:4047,93:4105,94:4164,95:4223,96:4282,97:4341,98:4400,99:4459,100:4519,101:4578,102:4637,103:4697,104:4756,105:4815,106:4875,107:4935,108:4994,109:5054,110:5114,111:5173,112:5233,113:5293,114:5352,115:5412,116:5472,117:5531,118:5591,119:5650,120:5709,121:5769,122:5828,123:5887,124:5947,125:6006,126:6065,127:6125,128:6184,129:6242,130:6301,131:6360,132:6418,133:6477,134:6535,135:6593,136:6652,137:6710,138:6767,139:6825,140:6882,141:6939,142:6997,143:7054,144:7110,145:7167,146:7224,147:7280,148:7336,149:7392,150:7447,151:7503,152:7558,153:7613,154:7667,155:7721,156:7776,157:7829,158:7882,159:7936,160:7988,161:8041,162:8094,163:8146,164:8197,165:8249,166:8299,167:8350,168:8400,169:8450,170:8499,171:8549,172:8597,173:8646,174:8694,175:8741,176:8788,177:8835,178:8881,179:8927,180:8973,181:9017,182:9062,183:9106,184:9149,185:9192,186:9235,187:9276,188:9318,189:9359,190:9399,191:9439,192:9478,193:9516,194:9554,195:9591,196:9627,197:9663,198:9699,199:9733,200:9767,201:9800,202:9831,203:9862,204:9894}
     };
 
-    // интерполяция объёма
     function getVolumeFromTable(heightCm, table) {
         if (heightCm <= 0) return 0;
         const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
@@ -254,71 +283,75 @@
         return v1 + (v2 - v1) * (heightCm - h1) / (h2 - h1);
     }
 
-    let tankIdCounter = 1;
+    // обратная функция: по объёму найти высоту (бинарный поиск по таблице)
+    function getHeightFromVolume(targetVolume, table) {
+        const heights = Object.keys(table).map(Number).sort((a,b)=>a-b);
+        if (targetVolume <= 0) return 0;
+        const maxVol = table[heights[heights.length-1]];
+        if (targetVolume >= maxVol) return heights[heights.length-1];
+        let left = 0, right = heights.length-1;
+        while (left < right) {
+            const mid = Math.floor((left+right)/2);
+            const volMid = getVolumeFromTable(heights[mid], table);
+            if (volMid < targetVolume) left = mid+1;
+            else right = mid;
+        }
+        let hLow = heights[left-1] || 0;
+        let hHigh = heights[left];
+        let vLow = getVolumeFromTable(hLow, table);
+        let vHigh = getVolumeFromTable(hHigh, table);
+        if (targetVolume <= vLow) return hLow;
+        if (targetVolume >= vHigh) return hHigh;
+        return hLow + (hHigh - hLow) * (targetVolume - vLow) / (vHigh - vLow);
+    }
 
-    // Функция пересчёта и обновления всех UI
+    let tankIdCounter = 1;
     function updateAllCalculations() {
         const allCards = document.querySelectorAll('.tank-card');
         let totalVolume = 0;
         let sumLevel = 0;
-        let overflowTanks = 0;
-
+        let overflowCount = 0;
         allCards.forEach(card => {
             const tankName = card.querySelector('.tank-type-select')?.value;
-            const levelInput = card.querySelector('.level-cm');
-            if (!tankName || !levelInput) return;
-            const levelCm = parseFloat(levelInput.value) || 0;
+            const currentLevelInput = card.querySelector('.current-level-cm');
+            if (!tankName || !currentLevelInput) return;
+            const levelCm = parseFloat(currentLevelInput.value) || 0;
             const table = TANKS_LIB[tankName];
-            let volume = 0;
-            let maxPossible = 0;
             if (table) {
-                volume = getVolumeFromTable(levelCm, table);
+                const volume = getVolumeFromTable(levelCm, table);
                 const maxH = Math.max(...Object.keys(table).map(Number));
-                maxPossible = getVolumeFromTable(maxH, table);
-            }
-            // отображаем объём
-            const volumeSpan = card.querySelector('.volume-number');
-            if (volumeSpan) volumeSpan.innerText = volume.toFixed(1);
-            totalVolume += volume;
-            sumLevel += levelCm;
-
-            // статус
-            const statusDiv = card.querySelector('.status');
-            if (table && statusDiv) {
-                const maxHeight = Math.max(...Object.keys(table).map(Number));
-                if (levelCm > maxHeight) {
-                    statusDiv.innerText = `⚠️ Перелив! > ${maxHeight} см`;
+                totalVolume += volume;
+                sumLevel += Math.min(levelCm, maxH);
+                if (levelCm > maxH) overflowCount++;
+                const volumeSpan = card.querySelector('.volume-number');
+                if (volumeSpan) volumeSpan.innerText = volume.toFixed(1);
+                const statusDiv = card.querySelector('.status');
+                if (levelCm > maxH) {
+                    statusDiv.innerText = `⚠️ ПЕРЕЛИВ! выше ${maxH} см`;
                     statusDiv.className = 'status overflow';
-                    overflowTanks++;
-                } else if (levelCm === maxHeight) {
-                    statusDiv.innerText = `✅ Полный (${maxHeight} см)`;
+                } else if (levelCm === maxH) {
+                    statusDiv.innerText = `✅ Полный (${maxH} см)`;
                     statusDiv.className = 'status normal';
-                } else if (levelCm > maxHeight * 0.9) {
-                    statusDiv.innerText = `🔔 Близко к пределу (${levelCm}/${maxHeight} см)`;
+                } else if (levelCm > maxH * 0.9) {
+                    statusDiv.innerText = `🔔 Близко к пределу (${levelCm.toFixed(1)}/${maxH} см)`;
                     statusDiv.className = 'status warning';
                 } else {
-                    statusDiv.innerText = `✔️ Нормальный уровень`;
+                    statusDiv.innerText = `✔️ Норма (${levelCm.toFixed(1)} см)`;
                     statusDiv.className = 'status normal';
                 }
-            } else if (statusDiv) {
-                statusDiv.innerText = `❌ Нет таблицы`;
             }
         });
-
         const avgLevel = allCards.length ? (sumLevel / allCards.length) : 0;
         document.getElementById('totalVolumeSpan').innerText = totalVolume.toFixed(1);
         document.getElementById('avgLevelSpan').innerText = avgLevel.toFixed(1);
-        document.getElementById('overflowCountSpan').innerText = overflowTanks;
+        document.getElementById('overflowCountSpan').innerText = overflowCount;
     }
 
-    // Создать карточку резервуара
-    function createTankCard(initialType = "Емк. 70.3", initialLevel = 80.0) {
+    function createTankCard(initialType = "Емк. 70.3", initialLevel = 50.0) {
         const card = document.createElement('div');
         card.className = 'tank-card';
         const uniqueId = `tank_${tankIdCounter++}`;
         card.setAttribute('data-id', uniqueId);
-
-        // Выпадающий список типов
         const tankOptions = Object.keys(TANKS_LIB).map(name => `<option value="${name}">${name}</option>`).join('');
         card.innerHTML = `
             <div class="card-header">
@@ -326,61 +359,66 @@
                 <button class="remove-btn" title="Удалить">✕</button>
             </div>
             <div class="param-row">
-                <div class="param">
-                    <label>📌 Тип резервуара</label>
-                    <select class="tank-type-select">${tankOptions}</select>
-                </div>
+                <div class="param"><label>📌 Тип резервуара</label><select class="tank-type-select">${tankOptions}</select></div>
             </div>
             <div class="param-row">
-                <div class="param">
-                    <label>📏 Уровень (см)</label>
-                    <input type="number" class="level-cm" step="any" value="${initialLevel}" placeholder="см">
+                <div class="param"><label>📏 Текущий уровень (см)</label><input type="number" class="current-level-cm" step="any" value="${initialLevel}"></div>
+            </div>
+            <div class="level-slider"><input type="range" class="level-slider-input" min="0" max="210" step="0.5" value="${initialLevel}"></div>
+            <div class="volume-block"><div style="font-size:13px;">💧 Текущий объём</div><div class="volume-value"><span class="volume-number">0.0</span> <span style="font-size:16px;">литров</span></div></div>
+            <div class="status normal">✔️ Норма</div>
+            
+            <div class="before-after">
+                <div class="before-after-title">📈 ДО / ПОСЛЕ наполнения</div>
+                <div class="flex-row">
+                    <div class="level-box"><div class="level-label">📉 Уровень ДО (см)</div><div class="level-number" id="beforeLevel_${uniqueId}">${initialLevel}</div></div>
+                    <div class="level-box"><div class="level-label">📈 Уровень ПОСЛЕ (см)</div><div class="level-number" id="afterLevel_${uniqueId}">—</div></div>
                 </div>
+                <div class="add-volume-area">
+                    <input type="number" id="addVolInput_${uniqueId}" class="add-volume-input" placeholder="➕ Объём для добавления (литры)" step="any">
+                    <button class="action-btn apply-add-btn" data-id="${uniqueId}">Добавить →</button>
+                </div>
+                <div style="font-size:11px; text-align:center; margin-top:6px;">* после добавления уровень пересчитается автоматически</div>
             </div>
-            <div class="level-slider">
-                <input type="range" class="level-slider-input" min="0" max="210" step="0.5" value="${initialLevel}">
-            </div>
-            <div class="volume-block">
-                <div style="font-size:13px; color:#2c5282;">💧 Объём жидкости</div>
-                <div class="volume-value"><span class="volume-number">0.0</span> <span style="font-size:16px;">литров</span></div>
-            </div>
-            <div class="status normal">✔️ Нормальный уровень</div>
         `;
-
         const typeSelect = card.querySelector('.tank-type-select');
-        const levelInput = card.querySelector('.level-cm');
+        const levelInput = card.querySelector('.current-level-cm');
         const slider = card.querySelector('.level-slider-input');
         const removeBtn = card.querySelector('.remove-btn');
+        const beforeSpan = card.querySelector(`#beforeLevel_${uniqueId}`);
+        const afterSpan = card.querySelector(`#afterLevel_${uniqueId}`);
+        const addVolumeInput = card.querySelector(`#addVolInput_${uniqueId}`);
+        const applyBtn = card.querySelector(`.apply-add-btn[data-id="${uniqueId}"]`);
 
-        // Функция локального пересчёта и общего
-        const recalc = () => {
+        const refreshBeforeAfter = () => {
+            const curLevel = parseFloat(levelInput.value) || 0;
+            beforeSpan.innerText = curLevel.toFixed(1);
+        };
+        const recalcAll = () => {
             updateAllCalculations();
-            // также динамически меняем макс слайдера в зависимости от выбранного типа
             const selectedType = typeSelect.value;
             const table = TANKS_LIB[selectedType];
             if (table) {
                 const maxH = Math.max(...Object.keys(table).map(Number));
                 slider.max = maxH;
-                if (parseFloat(levelInput.value) > maxH) {
-                    levelInput.value = maxH;
-                    slider.value = maxH;
-                }
-            }
-        };
-
-        typeSelect.addEventListener('change', () => {
-            const selected = typeSelect.value;
-            const table = TANKS_LIB[selected];
-            if (table) {
-                const maxH = Math.max(...Object.keys(table).map(Number));
-                slider.max = maxH;
-                let cur = parseFloat(levelInput.value);
+                let cur = parseFloat(levelInput.value) || 0;
                 if (cur > maxH) {
                     levelInput.value = maxH;
                     slider.value = maxH;
                 }
+                refreshBeforeAfter();
             }
-            recalc();
+        };
+        typeSelect.addEventListener('change', () => {
+            const table = TANKS_LIB[typeSelect.value];
+            if (table) {
+                const maxH = Math.max(...Object.keys(table).map(Number));
+                slider.max = maxH;
+                let cur = parseFloat(levelInput.value) || 0;
+                if (cur > maxH) levelInput.value = maxH;
+                slider.value = levelInput.value;
+                recalcAll();
+            }
         });
         levelInput.addEventListener('input', () => {
             let val = parseFloat(levelInput.value) || 0;
@@ -390,48 +428,55 @@
                 if (val > maxH) val = maxH;
                 levelInput.value = val;
                 slider.value = val;
-            } else {
-                slider.value = val;
-            }
-            recalc();
+            } else slider.value = val;
+            recalcAll();
         });
         slider.addEventListener('input', () => {
-            const val = parseFloat(slider.value);
-            levelInput.value = val;
-            recalc();
+            levelInput.value = slider.value;
+            recalcAll();
+        });
+        // Логика добавления объёма
+        applyBtn.addEventListener('click', () => {
+            const tankType = typeSelect.value;
+            const table = TANKS_LIB[tankType];
+            if (!table) return;
+            const currentLevel = parseFloat(levelInput.value) || 0;
+            const addVolume = parseFloat(addVolumeInput.value);
+            if (isNaN(addVolume) || addVolume <= 0) {
+                alert("Введите корректный объём (литры) > 0");
+                return;
+            }
+            const currentVol = getVolumeFromTable(currentLevel, table);
+            const newVol = currentVol + addVolume;
+            const maxPossibleVol = getVolumeFromTable(Math.max(...Object.keys(table).map(Number)), table);
+            let newLevel = getHeightFromVolume(newVol, table);
+            if (newVol >= maxPossibleVol) {
+                newLevel = Math.max(...Object.keys(table).map(Number));
+                alert(`⚠️ Внимание! Добавление ${addVolume} л приводит к заполнению резервуара выше предела (перелив). Установлен максимальный уровень ${newLevel.toFixed(1)} см.`);
+            }
+            levelInput.value = newLevel.toFixed(2);
+            slider.value = newLevel;
+            addVolumeInput.value = '';
+            recalcAll();
+            afterSpan.innerText = newLevel.toFixed(1);
+            setTimeout(() => { afterSpan.innerText = "—"; }, 1800);
         });
         removeBtn.addEventListener('click', () => {
             card.remove();
             updateAllCalculations();
         });
-        // первичная установка max слайдера
         const initTable = TANKS_LIB[initialType];
-        if (initTable) {
-            slider.max = Math.max(...Object.keys(initTable).map(Number));
-        }
-        recalc();
+        if (initTable) slider.max = Math.max(...Object.keys(initTable).map(Number));
+        recalcAll();
         return card;
     }
 
     const tanksGrid = document.getElementById('tanksGrid');
-    // Инициализация: добавим 3 резервуара для примера
     function initDefaultTanks() {
-        const demo = [
-            { type: "Емк. 70.3", level: 102.5 },
-            { type: "Емк. 71.1", level: 84.0 },
-            { type: "Емк. 114.2", level: 150.2 }
-        ];
-        demo.forEach(t => {
-            const card = createTankCard(t.type, t.level);
-            tanksGrid.appendChild(card);
-        });
+        const demo = [{type:"Емк. 70.3", level:78.4},{type:"Емк. 71.1", level:112.0},{type:"Емк. 114.2", level:95.3}];
+        demo.forEach(t => tanksGrid.appendChild(createTankCard(t.type, t.level)));
     }
-
-    document.getElementById('addTankMainBtn').addEventListener('click', () => {
-        const newCard = createTankCard("Емк. 70.3", 50);
-        tanksGrid.appendChild(newCard);
-    });
-
+    document.getElementById('addTankMainBtn').addEventListener('click', () => tanksGrid.appendChild(createTankCard("Емк. 70.3", 40)));
     initDefaultTanks();
 </script>
 </body>
